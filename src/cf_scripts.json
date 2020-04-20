@@ -1,0 +1,315 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Metadata": {
+        "AWS::CloudFormation::Designer": {
+            "ab65a1ca-1e1e-4c65-81fb-33399b54a730": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 137,
+                    "y": 60
+                },
+                "z": 0
+            },
+            "74fd412b-f517-4892-95bb-8a2a181501f7": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 127,
+                    "y": 150
+                },
+                "z": 0
+            },
+            "548918d9-c65f-4912-a3ad-8d557acde166": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 279,
+                    "y": 57
+                },
+                "z": 0
+            },
+            "b62d989a-4a96-45be-8d8c-ccdae66baa76": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 457,
+                    "y": 100
+                },
+                "z": 0
+            },
+            "d45c1cba-2197-450c-ba0d-ee9a01f0faa4": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 580,
+                    "y": 170
+                },
+                "z": 0
+            },
+            "35d45a4f-4b4b-4b21-aa0b-38a6d410083d": {
+                "size": {
+                    "width": 60,
+                    "height": 60
+                },
+                "position": {
+                    "x": 713,
+                    "y": 55
+                },
+                "z": 0
+            }
+        }
+    },
+    "Resources": {
+        "LambdaS3ExecutionRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": "*",
+                            "Service": ["lambda.amazonaws.com"]
+                        },
+                        "Action": ["sts:AssumeRole"]
+                    }]
+                },
+                "Path": "/"
+            }
+        },
+        "LambdaS3ExecutionPolicy": {
+            "DependsOn": [
+                "LambdaS3ExecutionRole"
+            ],
+            "Type": "AWS::IAM::Policy",
+            "Properties": {
+                "PolicyName": "NewLambdaS3policy",
+                "Roles": [
+                    {"Ref": "LambdaS3ExecutionRole"}
+                ],
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Action": "s3:*",
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "sqs:GetQueueUrl",
+                            "sqs:ChangeMessageVisibility",
+                            "sqs:ListDeadLetterSourceQueues",
+                            "sqs:SendMessageBatch",
+                            "sqs:PurgeQueue",
+                            "sqs:ReceiveMessage",
+                            "sqs:SendMessage",
+                            "sqs:GetQueueAttributes",
+                            "sqs:CreateQueue",
+                            "sqs:DeleteMessage",
+                            "sqs:ListQueueTags",
+                            "sqs:ChangeMessageVisibilityBatch",
+                            "sqs:SetQueueAttributes"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "s3:GetObject",
+                            "s3:PutObject",
+                            "s3:ListBucket",
+                            "s3:ListBucketVersions",
+                            "s3:ListBucketMultipartUploads",
+                            "s3:GetObjectTorrent",
+                            "s3:GetObjectVersion",
+                            "s3:GetObjectAcl",
+                            "s3:GetObjectVersionAcl",
+                            "s3:PutObjectAcl",
+                            "s3:PutObjectVersionAcl",
+                            "s3:GetBucketAcl",
+                            "s3:PutBucketAcl"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "s3:ListAllMyBuckets",
+                            "s3:GetBucketLocation"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "athena:StartQueryExecution",
+                            "athena:GetQueryExecution"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "glue:CreateDatabase",
+                            "glue:CreateTable",
+                            "glue:GetTable",
+                            "glue:GetTables",
+                            "glue:UpdateTable",
+                            "glue:UpdateDatabase",
+                            "glue:GetDatabases"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": "logs:CreateLogGroup",
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents"
+                        ],
+                        "Resource": "*"
+                    },
+                    {
+                        "Effect": "Allow",
+                        "Action": "lambda:*",
+                        "Resource": "*"
+                    }
+                ]}
+            }
+        },
+        "landingbucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName" : "surya-landing"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "ab65a1ca-1e1e-4c65-81fb-33399b54a730"
+                }
+            }
+        },
+        "curatedbucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName" : "surya-curated"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "74fd412b-f517-4892-95bb-8a2a181501f7"
+                }
+            }
+        },
+        "athenaoutput": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName" : "athena-query-opt"
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "74fd412b-f517-4892-95bb-8a2a181501f7"
+                }
+            }
+        },
+        "transformLambda": {
+            "Type": "AWS::Lambda::Function",
+            "DependsOn": [
+                "LambdaS3ExecutionRole",
+                "LambdaS3ExecutionPolicy"
+            ],
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "surya-lambda-code-store",
+                    "S3Key": "lambda.zip"
+                },
+                "FunctionName" : "surya-transform-files",
+                "Role": {
+                    "Fn::GetAtt": ["LambdaS3ExecutionRole", "Arn"]
+                },
+                "Timeout": 600,
+                "Handler": "lambda_function.lambda_handler",
+                "Runtime": "python3.6",
+                "MemorySize": 1024
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "b62d989a-4a96-45be-8d8c-ccdae66baa76"
+                }
+            }
+        },
+        "eventsqs": {
+            "Type": "AWS::SQS::Queue",
+            "Properties": {
+                "QueueName":"surya-send-message",
+                "VisibilityTimeout" : 200
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "d45c1cba-2197-450c-ba0d-ee9a01f0faa4"
+                }
+            }
+        },
+        "callAthena": {
+            "Type": "AWS::Lambda::Function",
+            "DependsOn": [
+                "LambdaS3ExecutionRole",
+                "LambdaS3ExecutionPolicy"
+            ],
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "surya-lambda-code-store",
+                    "S3Key": "athena_lambda_function.zip"
+                },
+                 "FunctionName" : "surya-call-athena",
+                "Role": {
+                    "Fn::GetAtt": ["LambdaS3ExecutionRole", "Arn"]
+                },
+                "Timeout": 200,
+                "Handler": "athena_lambda_function.lambda_handler",
+                "Runtime": "python3.6",
+                "MemorySize": 600                
+            },
+            "Metadata": {
+                "AWS::CloudFormation::Designer": {
+                    "id": "35d45a4f-4b4b-4b21-aa0b-38a6d410083d"
+                }
+            }
+        },
+        "EventSourceMapping": {
+            "Type": "AWS::Lambda::EventSourceMapping",
+            "DependsOn": [
+                "callAthena",
+                "eventsqs"
+            ],
+            "Properties": {
+                "EventSourceArn": {
+                    "Fn::GetAtt": [
+                        "eventsqs",
+                        "Arn"
+                    ]                    
+                },
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "callAthena",
+                        "Arn"
+                    ]
+                }
+            }
+        }
+    }
+}
