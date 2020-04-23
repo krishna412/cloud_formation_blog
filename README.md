@@ -1,2 +1,24 @@
 # cloud_formation_blog
-This repository holds codes for the cloud formation blog
+This repository contains code on how to deploy CloudFormation scripts using boto3.
+## Pre Requisites
+To run the code from your local system you must have the following
+1. python 3.7
+2. boto 3
+```bash
+pip install boto3
+```
+3. AWS tokens configured.
+
+## How to run the program
+1. Clone the git repository.
+```bash
+git clone https://github.com/surya-de/cloud_formation_blog.git
+```
+2. Add your lambda functions in the following folder.
+```
+cd surya-de/cloud_formation_blog
+```
+3. Run the python file
+```bash
+python deploy_scripts.py stack_name
+```
