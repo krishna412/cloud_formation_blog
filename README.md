@@ -18,7 +18,7 @@ git clone https://github.com/surya-de/cloud_formation_blog.git
 ```
 cd surya-de/cloud_formation_blog
 ```
-3. Run the python file
+3. Run the python file. Make sure to add the stack name at the end.
 ```bash
 python deploy_scripts.py stack_name
 ```
