@@ -1,5 +1,10 @@
 # cloud_formation_blog
 This repository contains code on how to deploy CloudFormation scripts using boto3.
+
+Link to blog-
+
+https://www.linkedin.com/pulse/configuring-aws-data-pipeline-using-cloudformation-chatterjee/?trackingId=rIzYFKisT3yHP5FgWo5Dow%3D%3D
+
 ## Pre Requisites
 To run the code from your local system you must have the following
 1. python 3.7
