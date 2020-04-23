@@ -1,112 +1,133 @@
-'Update or create a stack given a name and template + params'
-from __future__ import division, print_function, unicode_literals
-
 from datetime import datetime
 import logging
 import json
 import sys
-
 import boto3
 import botocore
 
-cf = boto3.client('cloudformation')  # pylint: disable=C0103
-log = logging.getLogger('deploy.cf.create_or_update')  # pylint: disable=C0103
+cf_package = boto3.client('cloudformation')
 
+'''
+    Module to create S3 bucket which stores lambda functions.
+    @Author: Suryadeep
+    @Version: 1.0
+'''
 def create_bucket():
+    print('Creating bucket')
     region = 'us-west-2'
     try:
         s3_client = boto3.client('s3', region_name = region)
         location = {'LocationConstraint': region}
-        s3_client.create_bucket(Bucket = 'surya-lambda-code-store', CreateBucketConfiguration = location)
+        s3_client.create_bucket(Bucket = 'surya-lambda-code-store', 
+                                CreateBucketConfiguration = location)
         
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'BucketAlreadyOwnedByYou':
             return True
         print (e)
         return False
+    # Return True when created.
+    return True
 
+'''
+    Module to push lambda codes into the bucket.
+    @Author: Suryadeep
+    @Version: 1.0
+'''
 def push_lambda_code():
+    print('pushing lambda codes')
+    file_1_src = 'lambda_functions/lambda.zip'
+    file_2_src = 'lambda_functions/athena_lambda_function.zip'
+
     if create_bucket() == True:
         s3Resource = boto3.resource('s3')
         try: 
-            s3Resource.meta.client.upload_file('lambda_functions/lambda.zip', 'surya-lambda-code-store', 'lambda.zip')
-            s3Resource.meta.client.upload_file('lambda_functions/athena_lambda_function.zip', 'surya-lambda-code-store', 'athena_lambda_function.zip')
+            s3Resource.meta.client.upload_file(file_1_src, 
+                                                'surya-lambda-code-store', 
+                                                'lambda.zip')
+
+            s3Resource.meta.client.upload_file(file_2_src, 
+                                                'surya-lambda-code-store', 
+                                                'athena_lambda_function.zip')
             return True
         except Exception as err:
             print(err)
 
-def main(stack_name, template, parameters):
-    'Update or create stack'
 
-    template_data = _parse_template(template)
-    parameter_data = _parse_parameters(parameters)
+# Module to check if the template is valid.
+def check_temp_validity(template):
+    with open(template) as t_obj:
+        t_data = t_obj.read()
+    cf_package.validate_template(TemplateBody = t_data)
+    return t_data
 
-    params = {
-        'StackName': stack_name,
-        'TemplateBody': template_data,
-        'Parameters': parameter_data,
-        'Capabilities': ['CAPABILITY_IAM']
-    }
-    try:
-        if _stack_exists(stack_name):
-            print('Updating {}'.format(stack_name))
-            stack_result = cf.update_stack(**params)
-            waiter = cf.get_waiter('stack_update_complete')
-        else:
-            print('Creating {}'.format(stack_name))
-            stack_result = cf.create_stack(**params)
-            waiter = cf.get_waiter('stack_create_complete')
-        print("...waiting for stack to be ready...")
-        waiter.wait(StackName=stack_name)
-    except botocore.exceptions.ClientError as ex:
-        error_message = ex.response['Error']['Message']
-        if error_message == 'No updates are to be performed.':
-            print("No changes")
-        else:
-            raise
-    else:
-        print(json.dumps(
-            cf.describe_stacks(StackName=stack_result['StackId']),
-            indent=2,
-            default=json_serial
-        ))
+# Module to check if params are valid.
+def check_params_validity(parameters):
+    with open(parameters) as p_obj:
+        p_data = json.load(p_obj)
+    return p_data
 
-
-def _parse_template(template):
-    with open(template) as template_fileobj:
-        template_data = template_fileobj.read()
-    cf.validate_template(TemplateBody=template_data)
-    return template_data
-
-
-def _parse_parameters(parameters):
-    with open(parameters) as parameter_fileobj:
-        parameter_data = json.load(parameter_fileobj)
-    return parameter_data
-
-
-def _stack_exists(stack_name):
-    stacks = cf.list_stacks()['StackSummaries']
+# Check if a stack exists with the
+# current name.
+def check_stack_status(stack_name):
+    stacks = cf_package.list_stacks()['StackSummaries']
     for stack in stacks:
         if stack['StackStatus'] == 'DELETE_COMPLETE':
             continue
         if stack_name == stack['StackName']:
+            print('stack')
             return True
     return False
 
+# Parse the arguments in the
+# expected format.
+def create_args(stack_name, template_vals, param_vals):
+    valid_temp = check_temp_validity(template_vals)
+    valid_param = check_params_validity(param_vals)
+    arguments = {
+        'StackName': stack_name,
+        'TemplateBody': valid_temp,
+        'Parameters': valid_param,
+        'Capabilities': ['CAPABILITY_IAM']
+    }
+    return arguments
 
-def json_serial(obj):
-    """JSON serializer for objects not serializable by default json code"""
-    if isinstance(obj, datetime):
-        serial = obj.isoformat()
-        return serial
-    raise TypeError("Type not serializable")
+# Module to initiate stack creation.
+def init_stack(pass_args):
+    try:
+        # If the stack already exists update.
+        if check_stack_status(pass_args['StackName']):
+            print('Stack already exists')
+            print('Updating stack.')
+            stack_result = cf_package.update_stack(**pass_args)
+            waiter = cf_package.get_waiter('stack_update_complete')
+        
+        else:
+            # Create stack if does not exist.
+            print('Creating ',pass_args['StackName'])
+            stack_result = cf_package.create_stack(**pass_args)
+            waiter = cf_package.get_waiter('stack_create_complete')
+            print('Preparing the stack')
+            waiter.wait(StackName = pass_args['StackName'])
+            print('stack created')
 
+    except botocore.exceptions.ClientError as ex:
+        # Check for exception when no change
+        # required.
+        if ex.response['Error']['Message'] == 'No updates are to be performed.':
+            print("No modification noted")
+        else:
+            print(ex)
 
-#if __name__ == '__main__':
-def caller(a, b, c):
-    print('inside caller')
-    if push_lambda_code() == True:
-        #main(*sys.argv[1:])
-        main(a, b, c)
-        return True
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print('Please enter the stack name in the following format-')
+        print('python <filename.py> <StackNameme>')
+
+    else:
+        if push_lambda_code() == True:
+            stk = sys.argv[1]
+            template_loc = 'src/cf_scripts.json'
+            param_loc = 'src/params.json'
+            args = create_args(stk, template_loc, param_loc)
+            init_stack(args)

@@ -242,7 +242,7 @@
                     "Fn::GetAtt": ["LambdaS3ExecutionRole", "Arn"]
                 },
                 "Timeout": 600,
-                "Handler": "lambda_function.lambda_handler",
+                "Handler": "lambda.lambda_handler",
                 "Runtime": "python3.6",
                 "MemorySize": 1024
             },
